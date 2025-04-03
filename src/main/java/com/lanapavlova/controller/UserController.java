@@ -1,6 +1,5 @@
 package com.lanapavlova.controller;
 
-import com.lanapavlova.entity.User;
 import com.lanapavlova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -8,12 +7,17 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class UserController {
 
+    private final UserService userService;
+
     @Autowired
-    private UserService userService;
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping("/users")
     public String getAllUsers(Model model) {
@@ -27,27 +31,29 @@ public class UserController {
     }
 
     @PostMapping("/add-user")
-    public String addUser(@RequestParam String name, @RequestParam int age) {
-        User user = new User();
-        user.setName(name);
-        user.setAge(age);
-        userService.save(user);
-        return "redirect:/users";
+    public String addUser(@RequestParam String name,
+                          @RequestParam int age,
+                          RedirectAttributes redirectAttributes) {
+        try {
+            userService.createUser(name, age);
+            return "redirect:/users";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error adding user: " + e.getMessage());
+            return "redirect:/add-user";
+        }
     }
 
     @GetMapping("/edit-user")
     public String showEditUserForm(@RequestParam Long id, Model model) {
-        User user = userService.findById(id);
-        model.addAttribute("user", user);
+        model.addAttribute("user", userService.findById(id));
         return "edit-user";
     }
 
     @PostMapping("/edit-user")
-    public String editUser(@RequestParam Long id, @RequestParam String name, @RequestParam int age) {
-        User user = userService.findById(id);
-        user.setName(name);
-        user.setAge(age);
-        userService.update(user);
+    public String editUser(@RequestParam Long id,
+                           @RequestParam String name,
+                           @RequestParam int age) {
+        userService.updateUser(id, name, age);
         return "redirect:/users";
     }
 
